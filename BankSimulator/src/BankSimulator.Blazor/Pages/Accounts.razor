@@ -1,0 +1,313 @@
+
+
+@page "/accounts"
+
+@attribute [Authorize(BankSimulatorPermissions.Accounts.Default)]
+@using BankSimulator.Accounts
+@using BankSimulator.Localization
+@using BankSimulator.Shared
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.Extensions.Localization
+@using Microsoft.AspNetCore.Components.Web
+@using Blazorise
+@using Blazorise.Components
+@using Blazorise.DataGrid
+@using Volo.Abp.BlazoriseUI
+@using Volo.Abp.BlazoriseUI.Components
+@using Volo.Abp.ObjectMapping
+@using Volo.Abp.AspNetCore.Components.Messages
+@using Volo.Abp.AspNetCore.Components.Web.Theming.Layout
+@using BankSimulator.Permissions
+@using Microsoft.AspNetCore.Components
+@using Volo.Abp.AspNetCore.Components.Web
+@using Volo.Abp.Http.Client
+@inherits BankSimulatorComponentBase
+@inject IAccountsAppService AccountsAppService
+@inject IUiMessageService UiMessageService
+@inject IRemoteServiceConfigurationProvider RemoteServiceConfigurationProvider
+@inject NavigationManager NavigationManager
+
+@* ************************* PAGE HEADER ************************* *@
+<PageHeader Title="@L["Accounts"]" BreadcrumbItems="BreadcrumbItems" Toolbar="Toolbar">
+
+</PageHeader>
+
+@* ************************* SEARCH ************************* *@
+<Card>
+    <CardBody>
+        <Form id="AccountSearchForm" class="mb-3">
+            <Addons>
+                <Addon AddonType="AddonType.Body">
+                    <TextEdit @bind-Text="@Filter.FilterText"
+                              Autofocus="true"
+                              Placeholder="@L["Search"]">
+                    </TextEdit>
+                </Addon>
+                <Addon AddonType="AddonType.End">
+                    <SubmitButton Form="AccountSearchForm" Clicked="GetAccountsAsync">
+                        <Icon Name="IconName.Search" Class="me-1"></Icon>@L["Search"]
+                    </SubmitButton>
+                </Addon>
+            </Addons>
+        </Form>
+    </CardBody>
+</Card>
+
+@* ************************* DATA GRID ************************* *@
+<Card>
+    <CardBody>
+        <DataGrid TItem="AccountWithNavigationPropertiesDto"
+                  Data="AccountList"
+                  ReadData="OnDataGridReadAsync"
+                  TotalItems="TotalCount"
+                  ShowPager="true"
+                  Responsive="true"
+                  PageSize="PageSize">
+            <DataGridColumns>
+                <DataGridEntityActionsColumn TItem="AccountWithNavigationPropertiesDto" @ref="@EntityActionsColumn">
+                    <DisplayTemplate>
+                        <EntityActions TItem="AccountWithNavigationPropertiesDto" EntityActionsColumn="@EntityActionsColumn">
+                            <EntityAction TItem="AccountWithNavigationPropertiesDto"
+                                          Visible="@CanEditAccount"
+                                          Clicked="async () => await OpenEditAccountModalAsync(context)"
+                                          Text="@L["Edit"]"></EntityAction>
+                            <EntityAction TItem="AccountWithNavigationPropertiesDto"
+                                          Visible="@CanDeleteAccount"
+                                          Clicked="() => DeleteAccountAsync(context)"
+                                          ConfirmationMessage="@(()=> L["DeleteConfirmationMessage"])"
+                                          Text="@L["Delete"]"></EntityAction>
+                        </EntityActions>
+                    </DisplayTemplate>
+                </DataGridEntityActionsColumn>
+               
+              <DataGridColumn TItem="AccountWithNavigationPropertiesDto"
+                      Field="Account.AccountNumber"
+                      Caption="@L["AccountNumber"]">
+              </DataGridColumn>
+
+              <DataGridColumn TItem="AccountWithNavigationPropertiesDto"
+                      Field="Account.Balance"
+                      Caption="@L["Balance"]">
+              </DataGridColumn>
+
+            </DataGridColumns>
+        </DataGrid>
+    </CardBody>
+</Card>
+
+@* ************************* CREATE MODAL ************************* *@
+<Modal @ref="CreateAccountModal" Closing="@CreateAccountModal.CancelClosingModalWhenFocusLost">
+    <ModalContent Centered="true">
+        <Form id="CreateAccountForm">
+            <ModalHeader>
+                <ModalTitle>@L["NewAccount"]</ModalTitle>
+                <CloseButton Clicked="CloseCreateAccountModalAsync" />
+            </ModalHeader>
+            <ModalBody>
+                <Tabs SelectedTab="@SelectedCreateTab" SelectedTabChanged="@OnSelectedCreateTabChanged">
+                    <Items>
+                        <Tab Name="account-create-tab">@L["Account"].Value</Tab> 
+                        <Tab Name="customerInfoFiles-create-tab">@L["CustomerInfoFiles"].Value</Tab>
+                    </Items>
+                    <Content>
+                <Validations @ref="@NewAccountValidations"
+                            Mode="ValidationMode.Auto"
+                            Model="@NewAccount"
+                            ValidateOnLoad="false">
+                     <TabPanel Name="account-create-tab">
+                    
+                    <Validation>
+                        <Field>
+                            <FieldLabel>@L["AccountNumber"]</FieldLabel>
+                            <TextEdit @bind-Text="@NewAccount.AccountNumber"  >
+                                <Feedback>
+                                    <ValidationError />
+                                </Feedback>
+                            </TextEdit>
+                        </Field>
+                    </Validation>
+
+
+                    <Validation>
+                        <Field>
+                            <FieldLabel>@L["Balance"]</FieldLabel>
+                            <NumericPicker TValue="double" @bind-Value="@NewAccount.Balance"   >
+                                <Feedback>
+                                    <ValidationError />
+                                </Feedback>
+                             </NumericPicker>
+                        </Field>
+                     </Validation>
+
+
+                    </TabPanel>
+                                                <TabPanel Name="customerInfoFiles-create-tab">
+
+                                <Row>
+                                    <Column ColumnSize="ColumnSize.Is9">
+                                        <Field>
+
+                                            <Autocomplete Data="@CustomerInfoFiles"
+                                                          TItem="LookupDto<Guid>"
+                                                          TValue="string"
+                                                          TextField="@((item) => item.DisplayName)"
+                                                          ValueField="@((item) => item.Id.ToString())"
+                                                          SearchChanged="@GetCustomerInfoFileLookupAsync"
+                                                          @bind-SelectedValue="@SelectedCustomerInfoFileId"
+                                                          @bind-SelectedText="@SelectedCustomerInfoFileText"
+                                                          Placeholder="&#8212;"/>
+                                        </Field>
+                                    </Column>
+
+                                    <Column ColumnSize="ColumnSize.Is3">
+                                        <Button Color="Color.Info" TextColor="TextColor.White" Size="Size.Small" Clicked="AddCustomerInfoFile">
+                                            <Icon class="fa fa-plus"></Icon> @L["Add"]
+                                        </Button>
+                                    </Column>
+                                </Row>
+                                @if (SelectedCustomerInfoFiles.Any())
+                                {
+                                    <Table striped-rows="true" responsive-sm="true" class="mt-2">
+                                        <TableHeader>
+                                            <TableHeaderCell><Span class="float-start">@L["CIFNumber"]</Span></TableHeaderCell>
+                                        </TableHeader>
+                                        <TableBody>
+                                            @foreach (var customerInfoFile in SelectedCustomerInfoFiles)
+                                            {
+                                                <TableRow>
+                                                    <TableRowCell><Span class="float-start">@customerInfoFile.DisplayName</Span></TableRowCell>
+                                                    <TableRowCell>
+                                                        <span class="btn btn-danger btn-sm float-end"
+                                                              @onclick="() => SelectedCustomerInfoFiles.RemoveAll(s => s.Id == customerInfoFile.Id)">
+                                                            <Icon Class="fa fa-trash"></Icon>
+                                                        </span>
+                                                    </TableRowCell>
+                                                </TableRow>
+                                            }
+                                        </TableBody>
+                                    </Table>
+                                }
+                            </TabPanel>
+                </Validations>
+                    </Content>
+                </Tabs>
+            </ModalBody>
+            <ModalFooter>
+                <Button Color="Color.Secondary"
+                        Clicked="CloseCreateAccountModalAsync">
+                    @L["Cancel"]
+                </Button>
+                <SubmitButton Form="CreateAccountForm" Clicked="CreateAccountAsync" />
+            </ModalFooter>
+        </Form>
+    </ModalContent>
+</Modal>
+
+@* ************************* EDIT MODAL ************************* *@
+<Modal @ref="EditAccountModal" Closing="@EditAccountModal.CancelClosingModalWhenFocusLost">
+    <ModalContent Centered="true">
+        <Form id="EditAccountForm">
+            <ModalHeader>
+                <ModalTitle>@L["Update"]</ModalTitle>
+                <CloseButton Clicked="CloseEditAccountModalAsync" />
+            </ModalHeader>
+            <ModalBody>
+                <Tabs SelectedTab="@SelectedEditTab" SelectedTabChanged="@OnSelectedEditTabChanged">
+                    <Items>
+                        <Tab Name="account-edit-tab">@L["Account"].Value</Tab>
+                        
+                        <Tab Name="customerInfoFiles-edit-tab">@L["CustomerInfoFiles"].Value</Tab>
+                    </Items>
+                    <Content>
+                <Validations @ref="@EditingAccountValidations"
+                            Mode="ValidationMode.Auto"
+                            Model="@EditingAccount"
+                            ValidateOnLoad="false">
+                     <TabPanel Name="account-edit-tab">
+                    
+                    <Validation>
+                        <Field>
+                            <FieldLabel>@L["AccountNumber"]</FieldLabel>
+                            <TextEdit @bind-Text="@EditingAccount.AccountNumber"  >
+                                <Feedback>
+                                    <ValidationError />
+                                </Feedback>
+                            </TextEdit>
+                        </Field>
+                    </Validation>
+
+
+                    <Validation>
+                        <Field>
+                            <FieldLabel>@L["Balance"]</FieldLabel>
+                            <NumericPicker TValue="double" @bind-Value="@EditingAccount.Balance"   >
+                                <Feedback>
+                                    <ValidationError />
+                                </Feedback>
+                             </NumericPicker>
+                        </Field>
+                     </Validation>
+
+
+                    </TabPanel>
+                                                <TabPanel Name="customerInfoFiles-edit-tab">
+
+                                <Row>
+                                    <Column ColumnSize="ColumnSize.Is9">
+                                        <Field>
+
+                                            <Autocomplete Data="@CustomerInfoFiles"
+                                                          TItem="LookupDto<Guid>"
+                                                          TValue="string"
+                                                          TextField="@((item) => item.DisplayName)"
+                                                          ValueField="@((item) => item.Id.ToString())"
+                                                          SearchChanged="@GetCustomerInfoFileLookupAsync"
+                                                          @bind-SelectedValue="@SelectedCustomerInfoFileId"
+                                                          @bind-SelectedText="@SelectedCustomerInfoFileText"
+                                                          Placeholder="&#8212;"/>
+                                        </Field>
+                                    </Column>
+
+                                    <Column ColumnSize="ColumnSize.Is3">
+                                        <Button Color="Color.Info" TextColor="TextColor.White" Size="Size.Small" Clicked="AddCustomerInfoFile">
+                                            <Icon class="fa fa-plus"></Icon> @L["Add"]
+                                        </Button>
+                                    </Column>
+                                </Row>
+                                @if (SelectedCustomerInfoFiles.Any())
+                                {
+                                    <Table striped-rows="true" responsive-sm="true" class="mt-2">
+                                        <TableHeader>
+                                            <TableHeaderCell><Span class="float-start">@L["CIFNumber"]</Span></TableHeaderCell>
+                                        </TableHeader>
+                                        <TableBody>
+                                            @foreach (var customerInfoFile in SelectedCustomerInfoFiles)
+                                            {
+                                                <TableRow>
+                                                    <TableRowCell><Span class="float-start">@customerInfoFile.DisplayName</Span></TableRowCell>
+                                                    <TableRowCell>
+                                                        <span class="btn btn-danger btn-sm float-end"
+                                                              @onclick="() => SelectedCustomerInfoFiles.RemoveAll(s => s.Id == customerInfoFile.Id)">
+                                                            <Icon Class="fa fa-trash"></Icon>
+                                                        </span>
+                                                    </TableRowCell>
+                                                </TableRow>
+                                            }
+                                        </TableBody>
+                                    </Table>
+                                }
+                            </TabPanel>
+                </Validations>
+                    </Content>
+                </Tabs>
+            </ModalBody>
+            <ModalFooter>
+                <Button Color="Color.Secondary"
+                        Clicked="CloseEditAccountModalAsync">
+                    @L["Cancel"]
+                </Button>
+                <SubmitButton Form="CreateAccountForm" Clicked="UpdateAccountAsync" />
+            </ModalFooter>
+        </Form>
+    </ModalContent>
+</Modal>

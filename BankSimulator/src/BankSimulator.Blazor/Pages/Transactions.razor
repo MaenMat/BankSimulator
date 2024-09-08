@@ -1,0 +1,335 @@
+
+
+@page "/transactions"
+
+@attribute [Authorize(BankSimulatorPermissions.Transactions.Default)]
+@using BankSimulator.Transactions
+@using BankSimulator.Localization
+@using BankSimulator.Shared
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.Extensions.Localization
+@using Microsoft.AspNetCore.Components.Web
+@using Blazorise
+@using Blazorise.Components
+@using Blazorise.DataGrid
+@using Volo.Abp.BlazoriseUI
+@using Volo.Abp.BlazoriseUI.Components
+@using Volo.Abp.ObjectMapping
+@using Volo.Abp.AspNetCore.Components.Messages
+@using Volo.Abp.AspNetCore.Components.Web.Theming.Layout
+@using BankSimulator.Permissions
+@using Microsoft.AspNetCore.Components
+@using Volo.Abp.AspNetCore.Components.Web
+@using Volo.Abp.Http.Client
+@inherits BankSimulatorComponentBase
+@inject ITransactionsAppService TransactionsAppService
+@inject IUiMessageService UiMessageService
+@inject IRemoteServiceConfigurationProvider RemoteServiceConfigurationProvider
+@inject NavigationManager NavigationManager
+@using BankSimulator.Transactions
+
+
+@* ************************* PAGE HEADER ************************* *@
+<PageHeader Title="@L["Transactions"]" BreadcrumbItems="BreadcrumbItems" Toolbar="Toolbar">
+
+</PageHeader>
+
+@* ************************* SEARCH ************************* *@
+<Card>
+    <CardBody>
+        <Form id="TransactionSearchForm" class="mb-3">
+            <Addons>
+                <Addon AddonType="AddonType.Body">
+                    <TextEdit @bind-Text="@Filter.FilterText"
+                              Autofocus="true"
+                              Placeholder="@L["Search"]">
+                    </TextEdit>
+                </Addon>
+                <Addon AddonType="AddonType.End">
+                    <SubmitButton Form="TransactionSearchForm" Clicked="GetTransactionsAsync">
+                        <Icon Name="IconName.Search" Class="me-1"></Icon>@L["Search"]
+                    </SubmitButton>
+                </Addon>
+            </Addons>
+        </Form>
+    </CardBody>
+</Card>
+
+@* ************************* DATA GRID ************************* *@
+<Card>
+    <CardBody>
+        <DataGrid TItem="TransactionWithNavigationPropertiesDto"
+                  Data="TransactionList"
+                  ReadData="OnDataGridReadAsync"
+                  TotalItems="TotalCount"
+                  ShowPager="true"
+                  Responsive="true"
+                  PageSize="PageSize">
+            <DataGridColumns>
+                <DataGridEntityActionsColumn TItem="TransactionWithNavigationPropertiesDto" @ref="@EntityActionsColumn">
+                    <DisplayTemplate>
+                        <EntityActions TItem="TransactionWithNavigationPropertiesDto" EntityActionsColumn="@EntityActionsColumn">
+                            <EntityAction TItem="TransactionWithNavigationPropertiesDto"
+                                          Visible="@CanEditTransaction"
+                                          Clicked="async () => await OpenEditTransactionModalAsync(context)"
+                                          Text="@L["Edit"]"></EntityAction>
+                            <EntityAction TItem="TransactionWithNavigationPropertiesDto"
+                                          Visible="@CanDeleteTransaction"
+                                          Clicked="() => DeleteTransactionAsync(context)"
+                                          ConfirmationMessage="@(()=> L["DeleteConfirmationMessage"])"
+                                          Text="@L["Delete"]"></EntityAction>
+                        </EntityActions>
+                    </DisplayTemplate>
+                </DataGridEntityActionsColumn>
+               
+              <DataGridColumn TItem="TransactionWithNavigationPropertiesDto"
+                      Field="Transaction.TransactionType"
+                      Caption="@L["TransactionType"]">
+                    <DisplayTemplate>
+                        @L[$"Enum:TransactionType.{context.Transaction.TransactionType.ToString("d")}"]
+                    </DisplayTemplate>
+              </DataGridColumn>
+
+
+              <DataGridColumn TItem="TransactionWithNavigationPropertiesDto"
+                      Field="Transaction.Amount"
+                      Caption="@L["Amount"]">
+              </DataGridColumn>
+
+              <DataGridColumn TItem="TransactionWithNavigationPropertiesDto"
+                      Field="Transaction.Description"
+                      Caption="@L["Description"]">
+              </DataGridColumn>
+
+              <DataGridColumn TItem="TransactionWithNavigationPropertiesDto"
+                      Field="Transaction.TransactionDate"
+                      Caption="@L["TransactionDate"]">
+                  <DisplayTemplate>
+                        @context.Transaction.TransactionDate.ToShortDateString()
+                  </DisplayTemplate>
+              </DataGridColumn>
+
+              <DataGridColumn TItem="TransactionWithNavigationPropertiesDto"
+                      Field="Account.AccountNumber"
+                      Caption="@L["SourceAccount"]">
+              </DataGridColumn>
+
+              <DataGridColumn TItem="TransactionWithNavigationPropertiesDto"
+                      Field="Account1.AccountNumber"
+                      Caption="@L["DestinationAccount"]">
+              </DataGridColumn>
+
+            </DataGridColumns>
+        </DataGrid>
+    </CardBody>
+</Card>
+
+@* ************************* CREATE MODAL ************************* *@
+<Modal @ref="CreateTransactionModal" Closing="@CreateTransactionModal.CancelClosingModalWhenFocusLost">
+    <ModalContent Centered="true">
+        <Form id="CreateTransactionForm">
+            <ModalHeader>
+                <ModalTitle>@L["NewTransaction"]</ModalTitle>
+                <CloseButton Clicked="CloseCreateTransactionModalAsync" />
+            </ModalHeader>
+            <ModalBody>
+                <Validations @ref="@NewTransactionValidations"
+                            Mode="ValidationMode.Auto"
+                            Model="@NewTransaction"
+                            ValidateOnLoad="false">
+                     
+                    
+                    <Field>
+                        <FieldLabel>@L["TransactionType"]</FieldLabel>
+                        <Select TValue="TransactionType" @bind-SelectedValue="@NewTransaction.TransactionType" >
+                            @foreach (var itemValue in Enum.GetValues(typeof(TransactionType)))
+                            {
+                                <SelectItem TValue="TransactionType" Value="@((TransactionType) itemValue)">
+                                    @L[$"Enum:TransactionType.{((TransactionType) itemValue).ToString("d")}"]
+                                </SelectItem>
+                            }
+                        </Select>
+                    </Field>
+
+
+                    <Validation>
+                        <Field>
+                            <FieldLabel>@L["Amount"]</FieldLabel>
+                            <NumericPicker TValue="double" @bind-Value="@NewTransaction.Amount"   >
+                                <Feedback>
+                                    <ValidationError />
+                                </Feedback>
+                             </NumericPicker>
+                        </Field>
+                     </Validation>
+
+
+                    <Validation>
+                        <Field>
+                            <FieldLabel>@L["Description"]</FieldLabel>
+                            <MemoEdit @bind-Text="@NewTransaction.Description"  >
+                                <Feedback>
+                                    <ValidationError />
+                                </Feedback>
+                            </MemoEdit>
+                        </Field>
+                    </Validation>
+
+
+                    <Validation>
+                        <Field>
+                            <FieldLabel>@L["TransactionDate"]</FieldLabel>
+                            <DateEdit TValue="DateTime" InputMode="DateInputMode.DateTime" @bind-Date="@NewTransaction.TransactionDate" >
+                               <Feedback>
+                                    <ValidationError />
+                                </Feedback>
+                            </DateEdit>
+                        </Field>
+                    </Validation>
+
+
+                    <Field>
+                        <FieldLabel>@L["Account"] </FieldLabel>
+                        <Autocomplete Data="@AccountsCollection"
+                                      TItem="LookupDto<Guid>"
+                                      TValue="Guid?"
+                                      TextField="@((item) => item?.DisplayName)"
+                                      ValueField="@((item) => item?.Id )"
+                                      SearchChanged="@GetAccountCollectionLookupAsync"
+                                      @bind-SelectedValue="@NewTransaction.SourceAccountId"
+                                      Placeholder="&#8212;" />
+                    </Field>
+
+
+                    <Field>
+                        <FieldLabel>@L["Account"] </FieldLabel>
+                        <Autocomplete Data="@AccountsCollection"
+                                      TItem="LookupDto<Guid>"
+                                      TValue="Guid?"
+                                      TextField="@((item) => item?.DisplayName)"
+                                      ValueField="@((item) => item?.Id )"
+                                      SearchChanged="@GetAccountCollectionLookupAsync"
+                                      @bind-SelectedValue="@NewTransaction.DestinationAccountId"
+                                      Placeholder="&#8212;" />
+                    </Field>
+
+
+                    
+                    
+                </Validations>
+            </ModalBody>
+            <ModalFooter>
+                <Button Color="Color.Secondary"
+                        Clicked="CloseCreateTransactionModalAsync">
+                    @L["Cancel"]
+                </Button>
+                <SubmitButton Form="CreateTransactionForm" Clicked="CreateTransactionAsync" />
+            </ModalFooter>
+        </Form>
+    </ModalContent>
+</Modal>
+
+@* ************************* EDIT MODAL ************************* *@
+<Modal @ref="EditTransactionModal" Closing="@EditTransactionModal.CancelClosingModalWhenFocusLost">
+    <ModalContent Centered="true">
+        <Form id="EditTransactionForm">
+            <ModalHeader>
+                <ModalTitle>@L["Update"]</ModalTitle>
+                <CloseButton Clicked="CloseEditTransactionModalAsync" />
+            </ModalHeader>
+            <ModalBody>
+                <Validations @ref="@EditingTransactionValidations"
+                            Mode="ValidationMode.Auto"
+                            Model="@EditingTransaction"
+                            ValidateOnLoad="false">
+                     
+                    
+                    <Field>
+                        <FieldLabel>@L["TransactionType"]</FieldLabel>
+                        <Select TValue="TransactionType" @bind-SelectedValue="@EditingTransaction.TransactionType" >
+                            @foreach (var itemValue in Enum.GetValues(typeof(TransactionType)))
+                            {
+                                <SelectItem TValue="TransactionType" Value="@((TransactionType) itemValue)">
+                                    @L[$"Enum:TransactionType.{((TransactionType) itemValue).ToString("d")}"]
+                                </SelectItem>
+                            }
+                        </Select>
+                    </Field>
+
+
+                    <Validation>
+                        <Field>
+                            <FieldLabel>@L["Amount"]</FieldLabel>
+                            <NumericPicker TValue="double" @bind-Value="@EditingTransaction.Amount"   >
+                                <Feedback>
+                                    <ValidationError />
+                                </Feedback>
+                             </NumericPicker>
+                        </Field>
+                     </Validation>
+
+
+                    <Validation>
+                        <Field>
+                            <FieldLabel>@L["Description"]</FieldLabel>
+                            <MemoEdit @bind-Text="@EditingTransaction.Description"  >
+                                <Feedback>
+                                    <ValidationError />
+                                </Feedback>
+                            </MemoEdit>
+                        </Field>
+                    </Validation>
+
+
+                    <Validation>
+                        <Field>
+                            <FieldLabel>@L["TransactionDate"]</FieldLabel>
+                            <DateEdit TValue="DateTime" InputMode="DateInputMode.DateTime" @bind-Date="@EditingTransaction.TransactionDate" >
+                               <Feedback>
+                                    <ValidationError />
+                                </Feedback>
+                            </DateEdit>
+                        </Field>
+                    </Validation>
+
+
+                    <Field>
+                        <FieldLabel>@L["Account"] </FieldLabel>
+                        <Autocomplete Data="@AccountsCollection"
+                                      TItem="LookupDto<Guid>"
+                                      TValue="Guid?"
+                                      TextField="@((item) => item?.DisplayName)"
+                                      ValueField="@((item) => item?.Id )"
+                                      SearchChanged="@GetAccountCollectionLookupAsync"
+                                      @bind-SelectedValue="@EditingTransaction.SourceAccountId"
+                                      Placeholder="&#8212;" />
+                    </Field>
+
+
+                    <Field>
+                        <FieldLabel>@L["Account"] </FieldLabel>
+                        <Autocomplete Data="@AccountsCollection"
+                                      TItem="LookupDto<Guid>"
+                                      TValue="Guid?"
+                                      TextField="@((item) => item?.DisplayName)"
+                                      ValueField="@((item) => item?.Id )"
+                                      SearchChanged="@GetAccountCollectionLookupAsync"
+                                      @bind-SelectedValue="@EditingTransaction.DestinationAccountId"
+                                      Placeholder="&#8212;" />
+                    </Field>
+
+
+                    
+                    
+                </Validations>
+            </ModalBody>
+            <ModalFooter>
+                <Button Color="Color.Secondary"
+                        Clicked="CloseEditTransactionModalAsync">
+                    @L["Cancel"]
+                </Button>
+                <SubmitButton Form="CreateTransactionForm" Clicked="UpdateTransactionAsync" />
+            </ModalFooter>
+        </Form>
+    </ModalContent>
+</Modal>

@@ -1,0 +1,320 @@
+
+
+@page "/customer-info-files"
+
+@attribute [Authorize(BankSimulatorPermissions.CustomerInfoFiles.Default)]
+@using BankSimulator.CustomerInfoFiles
+@using BankSimulator.Localization
+@using BankSimulator.Shared
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.Extensions.Localization
+@using Microsoft.AspNetCore.Components.Web
+@using Blazorise
+@using Blazorise.Components
+@using Blazorise.DataGrid
+@using Volo.Abp.BlazoriseUI
+@using Volo.Abp.BlazoriseUI.Components
+@using Volo.Abp.ObjectMapping
+@using Volo.Abp.AspNetCore.Components.Messages
+@using Volo.Abp.AspNetCore.Components.Web.Theming.Layout
+@using BankSimulator.Permissions
+@using Microsoft.AspNetCore.Components
+@using Volo.Abp.AspNetCore.Components.Web
+@using Volo.Abp.Http.Client
+@inherits BankSimulatorComponentBase
+@inject ICustomerInfoFilesAppService CustomerInfoFilesAppService
+@inject IUiMessageService UiMessageService
+@inject IRemoteServiceConfigurationProvider RemoteServiceConfigurationProvider
+@inject NavigationManager NavigationManager
+
+@* ************************* PAGE HEADER ************************* *@
+<PageHeader Title="@L["CustomerInfoFiles"]" BreadcrumbItems="BreadcrumbItems" Toolbar="Toolbar">
+
+</PageHeader>
+
+@* ************************* SEARCH ************************* *@
+<Card>
+    <CardBody>
+        <Form id="CustomerInfoFileSearchForm" class="mb-3">
+            <Addons>
+                <Addon AddonType="AddonType.Body">
+                    <TextEdit @bind-Text="@Filter.FilterText"
+                              Autofocus="true"
+                              Placeholder="@L["Search"]">
+                    </TextEdit>
+                </Addon>
+                <Addon AddonType="AddonType.End">
+                    <SubmitButton Form="CustomerInfoFileSearchForm" Clicked="GetCustomerInfoFilesAsync">
+                        <Icon Name="IconName.Search" Class="me-1"></Icon>@L["Search"]
+                    </SubmitButton>
+                </Addon>
+            </Addons>
+        </Form>
+    </CardBody>
+</Card>
+
+@* ************************* DATA GRID ************************* *@
+<Card>
+    <CardBody>
+        <DataGrid TItem="CustomerInfoFileDto"
+                  Data="CustomerInfoFileList"
+                  ReadData="OnDataGridReadAsync"
+                  TotalItems="TotalCount"
+                  ShowPager="true"
+                  Responsive="true"
+                  PageSize="PageSize">
+            <DataGridColumns>
+                <DataGridEntityActionsColumn TItem="CustomerInfoFileDto" @ref="@EntityActionsColumn">
+                    <DisplayTemplate>
+                        <EntityActions TItem="CustomerInfoFileDto" EntityActionsColumn="@EntityActionsColumn">
+                            <EntityAction TItem="CustomerInfoFileDto"
+                                          Visible="@CanEditCustomerInfoFile"
+                                          Clicked="async () => await OpenEditCustomerInfoFileModalAsync(context)"
+                                          Text="@L["Edit"]"></EntityAction>
+                            <EntityAction TItem="CustomerInfoFileDto"
+                                          Visible="@CanDeleteCustomerInfoFile"
+                                          Clicked="() => DeleteCustomerInfoFileAsync(context)"
+                                          ConfirmationMessage="@(()=> L["DeleteConfirmationMessage"])"
+                                          Text="@L["Delete"]"></EntityAction>
+                        </EntityActions>
+                    </DisplayTemplate>
+                </DataGridEntityActionsColumn>
+               
+              <DataGridColumn TItem="CustomerInfoFileDto"
+                      Field="CIFNumber"
+                      Caption="@L["CIFNumber"]">
+              </DataGridColumn>
+
+              <DataGridColumn TItem="CustomerInfoFileDto"
+                      Field="CustomerFirstName"
+                      Caption="@L["CustomerFirstName"]">
+              </DataGridColumn>
+
+              <DataGridColumn TItem="CustomerInfoFileDto"
+                      Field="CustomerLastName"
+                      Caption="@L["CustomerLastName"]">
+              </DataGridColumn>
+
+              <DataGridColumn TItem="CustomerInfoFileDto"
+                      Field="PhoneNumber"
+                      Caption="@L["PhoneNumber"]">
+              </DataGridColumn>
+
+              <DataGridColumn TItem="CustomerInfoFileDto"
+                      Field="NationalNumber"
+                      Caption="@L["NationalNumber"]">
+              </DataGridColumn>
+
+              <DataGridColumn TItem="CustomerInfoFileDto"
+                      Field="CustomerAddress"
+                      Caption="@L["CustomerAddress"]">
+              </DataGridColumn>
+
+            </DataGridColumns>
+        </DataGrid>
+    </CardBody>
+</Card>
+
+@* ************************* CREATE MODAL ************************* *@
+<Modal @ref="CreateCustomerInfoFileModal" Closing="@CreateCustomerInfoFileModal.CancelClosingModalWhenFocusLost">
+    <ModalContent Centered="true">
+        <Form id="CreateCustomerInfoFileForm">
+            <ModalHeader>
+                <ModalTitle>@L["NewCustomerInfoFile"]</ModalTitle>
+                <CloseButton Clicked="CloseCreateCustomerInfoFileModalAsync" />
+            </ModalHeader>
+            <ModalBody>
+                <Validations @ref="@NewCustomerInfoFileValidations"
+                            Mode="ValidationMode.Auto"
+                            Model="@NewCustomerInfoFile"
+                            ValidateOnLoad="false">
+                     
+                    
+                    <Validation>
+                        <Field>
+                            <FieldLabel>@L["CIFNumber"]</FieldLabel>
+                            <TextEdit @bind-Text="@NewCustomerInfoFile.CIFNumber"  >
+                                <Feedback>
+                                    <ValidationError />
+                                </Feedback>
+                            </TextEdit>
+                        </Field>
+                    </Validation>
+
+
+                    <Validation>
+                        <Field>
+                            <FieldLabel>@L["CustomerFirstName"] *</FieldLabel>
+                            <TextEdit @bind-Text="@NewCustomerInfoFile.CustomerFirstName"  >
+                                <Feedback>
+                                    <ValidationError />
+                                </Feedback>
+                            </TextEdit>
+                        </Field>
+                    </Validation>
+
+
+                    <Validation>
+                        <Field>
+                            <FieldLabel>@L["CustomerLastName"] *</FieldLabel>
+                            <TextEdit @bind-Text="@NewCustomerInfoFile.CustomerLastName"  >
+                                <Feedback>
+                                    <ValidationError />
+                                </Feedback>
+                            </TextEdit>
+                        </Field>
+                    </Validation>
+
+
+                    <Validation>
+                        <Field>
+                            <FieldLabel>@L["PhoneNumber"] *</FieldLabel>
+                            <TextEdit @bind-Text="@NewCustomerInfoFile.PhoneNumber"  >
+                                <Feedback>
+                                    <ValidationError />
+                                </Feedback>
+                            </TextEdit>
+                        </Field>
+                    </Validation>
+
+
+                    <Validation>
+                        <Field>
+                            <FieldLabel>@L["NationalNumber"] *</FieldLabel>
+                            <TextEdit @bind-Text="@NewCustomerInfoFile.NationalNumber"  >
+                                <Feedback>
+                                    <ValidationError />
+                                </Feedback>
+                            </TextEdit>
+                        </Field>
+                    </Validation>
+
+
+                    <Validation>
+                        <Field>
+                            <FieldLabel>@L["CustomerAddress"]</FieldLabel>
+                            <TextEdit @bind-Text="@NewCustomerInfoFile.CustomerAddress"  >
+                                <Feedback>
+                                    <ValidationError />
+                                </Feedback>
+                            </TextEdit>
+                        </Field>
+                    </Validation>
+
+
+                    
+                    
+                </Validations>
+            </ModalBody>
+            <ModalFooter>
+                <Button Color="Color.Secondary"
+                        Clicked="CloseCreateCustomerInfoFileModalAsync">
+                    @L["Cancel"]
+                </Button>
+                <SubmitButton Form="CreateCustomerInfoFileForm" Clicked="CreateCustomerInfoFileAsync" />
+            </ModalFooter>
+        </Form>
+    </ModalContent>
+</Modal>
+
+@* ************************* EDIT MODAL ************************* *@
+<Modal @ref="EditCustomerInfoFileModal" Closing="@EditCustomerInfoFileModal.CancelClosingModalWhenFocusLost">
+    <ModalContent Centered="true">
+        <Form id="EditCustomerInfoFileForm">
+            <ModalHeader>
+                <ModalTitle>@L["Update"]</ModalTitle>
+                <CloseButton Clicked="CloseEditCustomerInfoFileModalAsync" />
+            </ModalHeader>
+            <ModalBody>
+                <Validations @ref="@EditingCustomerInfoFileValidations"
+                            Mode="ValidationMode.Auto"
+                            Model="@EditingCustomerInfoFile"
+                            ValidateOnLoad="false">
+                     
+                    
+                    <Validation>
+                        <Field>
+                            <FieldLabel>@L["CIFNumber"]</FieldLabel>
+                            <TextEdit @bind-Text="@EditingCustomerInfoFile.CIFNumber"  >
+                                <Feedback>
+                                    <ValidationError />
+                                </Feedback>
+                            </TextEdit>
+                        </Field>
+                    </Validation>
+
+
+                    <Validation>
+                        <Field>
+                            <FieldLabel>@L["CustomerFirstName"] *</FieldLabel>
+                            <TextEdit @bind-Text="@EditingCustomerInfoFile.CustomerFirstName"  >
+                                <Feedback>
+                                    <ValidationError />
+                                </Feedback>
+                            </TextEdit>
+                        </Field>
+                    </Validation>
+
+
+                    <Validation>
+                        <Field>
+                            <FieldLabel>@L["CustomerLastName"] *</FieldLabel>
+                            <TextEdit @bind-Text="@EditingCustomerInfoFile.CustomerLastName"  >
+                                <Feedback>
+                                    <ValidationError />
+                                </Feedback>
+                            </TextEdit>
+                        </Field>
+                    </Validation>
+
+
+                    <Validation>
+                        <Field>
+                            <FieldLabel>@L["PhoneNumber"] *</FieldLabel>
+                            <TextEdit @bind-Text="@EditingCustomerInfoFile.PhoneNumber"  >
+                                <Feedback>
+                                    <ValidationError />
+                                </Feedback>
+                            </TextEdit>
+                        </Field>
+                    </Validation>
+
+
+                    <Validation>
+                        <Field>
+                            <FieldLabel>@L["NationalNumber"] *</FieldLabel>
+                            <TextEdit @bind-Text="@EditingCustomerInfoFile.NationalNumber"  >
+                                <Feedback>
+                                    <ValidationError />
+                                </Feedback>
+                            </TextEdit>
+                        </Field>
+                    </Validation>
+
+
+                    <Validation>
+                        <Field>
+                            <FieldLabel>@L["CustomerAddress"]</FieldLabel>
+                            <TextEdit @bind-Text="@EditingCustomerInfoFile.CustomerAddress"  >
+                                <Feedback>
+                                    <ValidationError />
+                                </Feedback>
+                            </TextEdit>
+                        </Field>
+                    </Validation>
+
+
+                    
+                    
+                </Validations>
+            </ModalBody>
+            <ModalFooter>
+                <Button Color="Color.Secondary"
+                        Clicked="CloseEditCustomerInfoFileModalAsync">
+                    @L["Cancel"]
+                </Button>
+                <SubmitButton Form="CreateCustomerInfoFileForm" Clicked="UpdateCustomerInfoFileAsync" />
+            </ModalFooter>
+        </Form>
+    </ModalContent>
+</Modal>
