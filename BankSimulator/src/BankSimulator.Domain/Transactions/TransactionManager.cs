@@ -21,14 +21,15 @@ namespace BankSimulator.Transactions
         }
 
         public async Task<Transaction> CreateAsync(
-        Guid? sourceAccountId, Guid? destinationAccountId, TransactionType transactionType, double amount, string description, DateTime transactionDate)
+        Guid? sourceAccountId, Guid? destinationAccountId, TransactionType transactionType, double amount, string description, DateTime transactionDate, TransactionStatus transactionStatus)
         {
             Check.NotNull(transactionType, nameof(transactionType));
             Check.NotNull(transactionDate, nameof(transactionDate));
+            Check.NotNull(transactionStatus, nameof(transactionStatus));
 
             var transaction = new Transaction(
              GuidGenerator.Create(),
-             sourceAccountId, destinationAccountId, transactionType, amount, description, transactionDate
+             sourceAccountId, destinationAccountId, transactionType, amount, description, transactionDate, transactionStatus
              );
 
             return await _transactionRepository.InsertAsync(transaction);
@@ -36,11 +37,12 @@ namespace BankSimulator.Transactions
 
         public async Task<Transaction> UpdateAsync(
             Guid id,
-            Guid? sourceAccountId, Guid? destinationAccountId, TransactionType transactionType, double amount, string description, DateTime transactionDate, [CanBeNull] string concurrencyStamp = null
+            Guid? sourceAccountId, Guid? destinationAccountId, TransactionType transactionType, double amount, string description, DateTime transactionDate, TransactionStatus transactionStatus, [CanBeNull] string concurrencyStamp = null
         )
         {
             Check.NotNull(transactionType, nameof(transactionType));
             Check.NotNull(transactionDate, nameof(transactionDate));
+            Check.NotNull(transactionStatus, nameof(transactionStatus));
 
             var transaction = await _transactionRepository.GetAsync(id);
 
@@ -50,6 +52,7 @@ namespace BankSimulator.Transactions
             transaction.Amount = amount;
             transaction.Description = description;
             transaction.TransactionDate = transactionDate;
+            transaction.TransactionStatus = transactionStatus;
 
             transaction.SetConcurrencyStampIfNotNull(concurrencyStamp);
             return await _transactionRepository.UpdateAsync(transaction);

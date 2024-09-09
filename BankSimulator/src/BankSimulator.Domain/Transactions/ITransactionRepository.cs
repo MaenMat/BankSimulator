@@ -22,6 +22,7 @@ namespace BankSimulator.Transactions
             string description = null,
             DateTime? transactionDateMin = null,
             DateTime? transactionDateMax = null,
+            TransactionStatus? transactionStatus = null,
             Guid? sourceAccountId = null,
             Guid? destinationAccountId = null,
             string sorting = null,
@@ -38,6 +39,7 @@ namespace BankSimulator.Transactions
                     string description = null,
                     DateTime? transactionDateMin = null,
                     DateTime? transactionDateMax = null,
+                    TransactionStatus? transactionStatus = null,
                     string sorting = null,
                     int maxResultCount = int.MaxValue,
                     int skipCount = 0,
@@ -52,6 +54,7 @@ namespace BankSimulator.Transactions
             string description = null,
             DateTime? transactionDateMin = null,
             DateTime? transactionDateMax = null,
+            TransactionStatus? transactionStatus = null,
             Guid? sourceAccountId = null,
             Guid? destinationAccountId = null,
             CancellationToken cancellationToken = default);

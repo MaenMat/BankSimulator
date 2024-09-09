@@ -140,6 +140,18 @@ public class BankSimulatorDbContext :
         }
         if (builder.IsHostDatabase())
         {
+
+        }
+        if (builder.IsHostDatabase())
+        {
+
+        }
+        if (builder.IsHostDatabase())
+        {
+
+        }
+        if (builder.IsHostDatabase())
+        {
             builder.Entity<Transaction>(b =>
 {
     b.ToTable(BankSimulatorConsts.DbTablePrefix + "Transactions", BankSimulatorConsts.DbSchema);
@@ -148,6 +160,7 @@ public class BankSimulatorDbContext :
     b.Property(x => x.Amount).HasColumnName(nameof(Transaction.Amount));
     b.Property(x => x.Description).HasColumnName(nameof(Transaction.Description));
     b.Property(x => x.TransactionDate).HasColumnName(nameof(Transaction.TransactionDate));
+    b.Property(x => x.TransactionStatus).HasColumnName(nameof(Transaction.TransactionStatus));
     b.HasOne<Account>().WithMany().HasForeignKey(x => x.SourceAccountId).OnDelete(DeleteBehavior.NoAction);
     b.HasOne<Account>().WithMany().HasForeignKey(x => x.DestinationAccountId).OnDelete(DeleteBehavior.NoAction);
 });

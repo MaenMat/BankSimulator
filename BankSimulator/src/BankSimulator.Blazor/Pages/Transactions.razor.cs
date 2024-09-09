@@ -11,6 +11,7 @@ using Volo.Abp.AspNetCore.Components.Web.Theming.PageToolbars;
 using BankSimulator.Transactions;
 using BankSimulator.Permissions;
 using BankSimulator.Shared;
+using Volo.Abp.AspNetCore.Components.Messages;
 
 namespace BankSimulator.Blazor.Pages
 {
@@ -26,13 +27,16 @@ namespace BankSimulator.Blazor.Pages
         private bool CanCreateTransaction { get; set; }
         private bool CanEditTransaction { get; set; }
         private bool CanDeleteTransaction { get; set; }
-        private TransactionCreateDto NewTransaction { get; set; }
-        private Validations NewTransactionValidations { get; set; } = new();
-        private TransactionUpdateDto EditingTransaction { get; set; }
-        private Validations EditingTransactionValidations { get; set; } = new();
-        private Guid EditingTransactionId { get; set; }
-        private Modal CreateTransactionModal { get; set; } = new();
-        private Modal EditTransactionModal { get; set; } = new();
+        private WithdrawalCreateDto NewWithdraw { get; set; }
+        private DepositCreateDto NewDeposit { get; set; }
+        private TransferCreateDto NewTransfer { get; set; }
+        private Validations NewWithdrawValidations { get; set; } = new();
+        private Validations NewDepositValidations { get; set; } = new();
+        private Validations NewTransferValidations { get; set; } = new();
+        private Guid reverseTransactionId { get; set; }
+        private Modal CreateWithdrawModal { get; set; } = new();
+        private Modal CreateDepositModal { get; set; } = new();
+        private Modal CreateTransferModal { get; set; } = new();
         private GetTransactionsInput Filter { get; set; }
         private DataGridEntityActionsColumn<TransactionWithNavigationPropertiesDto> EntityActionsColumn { get; set; } = new();
         protected string SelectedCreateTab = "transaction-create-tab";
@@ -41,8 +45,9 @@ namespace BankSimulator.Blazor.Pages
 
         public Transactions()
         {
-            NewTransaction = new TransactionCreateDto();
-            EditingTransaction = new TransactionUpdateDto();
+            NewWithdraw = new WithdrawalCreateDto();
+            NewDeposit = new DepositCreateDto();
+            NewTransfer = new TransferCreateDto();
             Filter = new GetTransactionsInput
             {
                 MaxResultCount = PageSize,
@@ -69,10 +74,21 @@ namespace BankSimulator.Blazor.Pages
         {
             Toolbar.AddButton(L["ExportToExcel"], async () =>{ await DownloadAsExcelAsync(); }, IconName.Download);
             
-            Toolbar.AddButton(L["NewTransaction"], async () =>
+            Toolbar.AddButton(L["NewWithdraw"], async () =>
             {
-                await OpenCreateTransactionModalAsync();
+                await OpenCreateWithdrawModalAsync();
             }, IconName.Add, requiredPolicyName: BankSimulatorPermissions.Transactions.Create);
+
+            Toolbar.AddButton(L["NewDeposit"], async () =>
+            {
+                await OpenCreateDepositModalAsync();
+            }, IconName.Add, requiredPolicyName: BankSimulatorPermissions.Transactions.Create);
+
+            Toolbar.AddButton(L["NewTransfer"], async () =>
+            {
+                await OpenCreateTransferModalAsync();
+            }, IconName.Add, requiredPolicyName: BankSimulatorPermissions.Transactions.Create);
+
 
             return ValueTask.CompletedTask;
         }
@@ -124,55 +140,94 @@ namespace BankSimulator.Blazor.Pages
             await InvokeAsync(StateHasChanged);
         }
 
-        private async Task OpenCreateTransactionModalAsync()
+        private async Task OpenCreateWithdrawModalAsync()
         {
-            NewTransaction = new TransactionCreateDto{
+            NewWithdraw = new WithdrawalCreateDto{
                 TransactionDate = DateTime.Now,
-
-                
             };
-            await NewTransactionValidations.ClearAll();
-            await CreateTransactionModal.Show();
+            await NewWithdrawValidations.ClearAll();
+            await CreateWithdrawModal.Show();
         }
 
-        private async Task CloseCreateTransactionModalAsync()
+        private async Task OpenCreateDepositModalAsync()
         {
-            NewTransaction = new TransactionCreateDto{
+            NewDeposit = new DepositCreateDto
+            {
                 TransactionDate = DateTime.Now,
-
-                
             };
-            await CreateTransactionModal.Hide();
+            await NewDepositValidations.ClearAll();
+            await CreateDepositModal.Show();
+        }
+        private async Task OpenCreateTransferModalAsync()
+        {
+            NewTransfer = new TransferCreateDto
+            {
+                TransactionDate = DateTime.Now,
+            };
+            await NewTransferValidations.ClearAll();
+            await CreateTransferModal.Show();
         }
 
-        private async Task OpenEditTransactionModalAsync(TransactionWithNavigationPropertiesDto input)
+        private async Task CloseCreateWithdrawModalAsync()
         {
-            var transaction = await TransactionsAppService.GetWithNavigationPropertiesAsync(input.Transaction.Id);
+            await CreateWithdrawModal.Hide();
+        }
+        private async Task CloseCreateDepositModalAsync()
+        {
+            await CreateDepositModal.Hide();
+        }
+        private async Task CloseCreateTransferModalAsync()
+        {
+            await CreateTransferModal.Hide();
+        }
+
+        //private async Task OpenEditTransactionModalAsync(TransactionWithNavigationPropertiesDto input)
+        //{
+        //    var transaction = await TransactionsAppService.GetWithNavigationPropertiesAsync(input.Transaction.Id);
             
-            EditingTransactionId = transaction.Transaction.Id;
-            EditingTransaction = ObjectMapper.Map<TransactionDto, TransactionUpdateDto>(transaction.Transaction);
-            await EditingTransactionValidations.ClearAll();
-            await EditTransactionModal.Show();
-        }
+        //    EditingTransactionId = transaction.Transaction.Id;
+        //    EditingTransaction = ObjectMapper.Map<TransactionDto, TransactionUpdateDto>(transaction.Transaction);
+        //    await EditingTransactionValidations.ClearAll();
+        //    await EditTransactionModal.Show();
+        //}
 
-        private async Task DeleteTransactionAsync(TransactionWithNavigationPropertiesDto input)
-        {
-            await TransactionsAppService.DeleteAsync(input.Transaction.Id);
-            await GetTransactionsAsync();
-        }
+        //private async Task DeleteTransactionAsync(TransactionWithNavigationPropertiesDto input)
+        //{
+        //    await TransactionsAppService.DeleteAsync(input.Transaction.Id);
+        //    await GetTransactionsAsync();
+        //}
 
-        private async Task CreateTransactionAsync()
+        private async Task CreateWithdrawAsync()
         {
             try
             {
-                if (await NewTransactionValidations.ValidateAll() == false)
+                if (await NewWithdrawValidations.ValidateAll() == false)
                 {
                     return;
                 }
 
-                await TransactionsAppService.CreateAsync(NewTransaction);
+                await TransactionsAppService.CreateWithdrawAsync(NewWithdraw);
                 await GetTransactionsAsync();
-                await CloseCreateTransactionModalAsync();
+                await CloseCreateWithdrawModalAsync();
+            }
+            catch (Exception ex)
+            {
+                await HandleErrorAsync(ex);
+            }
+        }
+        
+        private async Task CreateDepositAsync()
+        {
+            try
+            {
+                if (await NewDepositValidations.ValidateAll() == false)
+                {
+                    return;
+                }
+
+                await TransactionsAppService.CreateDepositAsync(NewDeposit);
+                await GetTransactionsAsync();
+                await CloseCreateDepositModalAsync();
             }
             catch (Exception ex)
             {
@@ -180,29 +235,47 @@ namespace BankSimulator.Blazor.Pages
             }
         }
 
-        private async Task CloseEditTransactionModalAsync()
-        {
-            await EditTransactionModal.Hide();
-        }
-
-        private async Task UpdateTransactionAsync()
+        private async Task CreateTransferAsync()
         {
             try
             {
-                if (await EditingTransactionValidations.ValidateAll() == false)
+                if (await NewTransferValidations.ValidateAll() == false)
                 {
                     return;
                 }
 
-                await TransactionsAppService.UpdateAsync(EditingTransactionId, EditingTransaction);
+                await TransactionsAppService.CreateTransferAsync(NewTransfer);
                 await GetTransactionsAsync();
-                await EditTransactionModal.Hide();                
+                await CloseCreateTransferModalAsync();
             }
             catch (Exception ex)
             {
                 await HandleErrorAsync(ex);
             }
         }
+
+        //private async Task CloseEditTransactionModalAsync()
+        //{
+        //    await EditTransactionModal.Hide();
+        //}
+
+        //private async Task UpdateTransactionAsync()
+        //{
+        //    try
+        //    {
+        //        if (await EditingTransactionValidations.ValidateAll() == false)
+        //        {
+        //            return;
+        //        }
+        //        await TransactionsAppService.UpdateAsync(EditingTransactionId, EditingTransaction);
+        //        await GetTransactionsAsync();
+        //        await EditTransactionModal.Hide();                
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        await HandleErrorAsync(ex);
+        //    }
+        //}
 
         private void OnSelectedCreateTabChanged(string name)
         {
@@ -214,10 +287,19 @@ namespace BankSimulator.Blazor.Pages
             SelectedEditTab = name;
         }
         
-
         private async Task GetAccountCollectionLookupAsync(string? newValue = null)
         {
             AccountsCollection = (await TransactionsAppService.GetAccountLookupAsync(new LookupRequestDto { Filter = newValue })).Items;
+        }
+
+        private async Task ReverseTransation(Guid id)
+        {
+            var confirm =await UiMessageService.Confirm(L["AreYouSureYouWantToReverseThisTransaction?"]);
+            if (confirm) 
+            {
+                await TransactionsAppService.ReverseAsync(id);
+            }
+            
         }
 
     }

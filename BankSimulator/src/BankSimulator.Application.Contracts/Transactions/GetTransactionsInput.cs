@@ -14,6 +14,7 @@ namespace BankSimulator.Transactions
         public string? Description { get; set; }
         public DateTime? TransactionDateMin { get; set; }
         public DateTime? TransactionDateMax { get; set; }
+        public TransactionStatus? TransactionStatus { get; set; }
         public Guid? SourceAccountId { get; set; }
         public Guid? DestinationAccountId { get; set; }
 

@@ -73,6 +73,10 @@
     "MaxTransactionDate": "Max Transaction Date",
     "Transactions": "Transactions",
     "NewTransaction": "New Transaction",
-    "Menu:Transactions": "Transactions"
+    "Menu:Transactions": "Transactions",
+    "Enum:TransactionStatus.0": "Pending",
+    "Enum:TransactionStatus.1": "Done",
+    "Enum:TransactionStatus.2": "Reversed",
+    "TransactionStatus": "Transaction Status"
   }
 }

@@ -23,6 +23,8 @@ namespace BankSimulator.Transactions
         public virtual string? Description { get; set; }
 
         public virtual DateTime TransactionDate { get; set; }
+
+        public virtual TransactionStatus TransactionStatus { get; set; }
         public Guid? SourceAccountId { get; set; }
         public Guid? DestinationAccountId { get; set; }
 
@@ -31,7 +33,7 @@ namespace BankSimulator.Transactions
 
         }
 
-        public Transaction(Guid id, Guid? sourceAccountId, Guid? destinationAccountId, TransactionType transactionType, double amount, string description, DateTime transactionDate)
+        public Transaction(Guid id, Guid? sourceAccountId, Guid? destinationAccountId, TransactionType transactionType, double amount, string description, DateTime transactionDate, TransactionStatus transactionStatus)
         {
 
             Id = id;
@@ -39,6 +41,7 @@ namespace BankSimulator.Transactions
             Amount = amount;
             Description = description;
             TransactionDate = transactionDate;
+            TransactionStatus = transactionStatus;
             SourceAccountId = sourceAccountId;
             DestinationAccountId = destinationAccountId;
         }

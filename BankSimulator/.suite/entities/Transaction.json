@@ -124,6 +124,36 @@
       "EnumValues": null,
       "IsSelected": true,
       "OrdinalIndex": 0
+    },
+    {
+      "Id": "f00fd468-857b-41ca-a34a-200c030d943b",
+      "Name": "TransactionStatus",
+      "Type": "enum",
+      "EnumType": "TransactionStatus",
+      "EnumNamespace": "BankSimulator.Transactions",
+      "EnumAngularImport": "shared/enums/transaction-status",
+      "EnumFilePath": "/src/BankSimulator.Domain.Shared/Transactions/TransactionStatus.cs",
+      "DefaultValue": null,
+      "IsNullable": false,
+      "IsRequired": false,
+      "IsTextArea": false,
+      "MinLength": null,
+      "MaxLength": null,
+      "SortOrder": 0,
+      "SortType": 0,
+      "Regex": "",
+      "EmailValidation": false,
+      "ShowOnList": true,
+      "ShowOnCreateModal": true,
+      "ShowOnEditModal": true,
+      "ReadonlyOnEditModal": false,
+      "EnumValues": {
+        "Pending": 0,
+        "Done": 1,
+        "Reversed": 2
+      },
+      "IsSelected": true,
+      "OrdinalIndex": 0
     }
   ],
   "NavigationProperties": [

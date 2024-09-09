@@ -87,7 +87,7 @@
 
               <DataGridColumn TItem="AccountWithNavigationPropertiesDto"
                       Field="Account.Balance"
-                      Caption="@L["Balance"]">
+                                Caption="@L["Balance"]">
               </DataGridColumn>
 
             </DataGridColumns>
@@ -131,7 +131,7 @@
                     <Validation>
                         <Field>
                             <FieldLabel>@L["Balance"]</FieldLabel>
-                            <NumericPicker TValue="double" @bind-Value="@NewAccount.Balance"   >
+                            <NumericPicker TValue="double" GroupSeparator="," @bind-Value="@NewAccount.Balance"   >
                                 <Feedback>
                                     <ValidationError />
                                 </Feedback>
@@ -240,7 +240,7 @@
                     <Validation>
                         <Field>
                             <FieldLabel>@L["Balance"]</FieldLabel>
-                            <NumericPicker TValue="double" @bind-Value="@EditingAccount.Balance"   >
+                                        <NumericPicker TValue="double" GroupSeparator="," @bind-Value="@EditingAccount.Balance">
                                 <Feedback>
                                     <ValidationError />
                                 </Feedback>

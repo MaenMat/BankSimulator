@@ -52,25 +52,25 @@ namespace BankSimulator.Controllers.Transactions
             return _transactionsAppService.GetAccountLookupAsync(input);
         }
 
-        [HttpPost]
-        public virtual Task<TransactionDto> CreateAsync(TransactionCreateDto input)
-        {
-            return _transactionsAppService.CreateAsync(input);
-        }
+        //[HttpPost]
+        //public virtual Task<TransactionDto> CreateAsync(TransactionCreateDto input)
+        //{
+        //    return _transactionsAppService.CreateAsync(input);
+        //}
 
-        [HttpPut]
-        [Route("{id}")]
-        public virtual Task<TransactionDto> UpdateAsync(Guid id, TransactionUpdateDto input)
-        {
-            return _transactionsAppService.UpdateAsync(id, input);
-        }
+        //[HttpPut]
+        //[Route("{id}")]
+        //public virtual Task<TransactionDto> UpdateAsync(Guid id, TransactionUpdateDto input)
+        //{
+        //    return _transactionsAppService.UpdateAsync(id, input);
+        //}
 
-        [HttpDelete]
-        [Route("{id}")]
-        public virtual Task DeleteAsync(Guid id)
-        {
-            return _transactionsAppService.DeleteAsync(id);
-        }
+        //[HttpDelete]
+        //[Route("{id}")]
+        //public virtual Task DeleteAsync(Guid id)
+        //{
+        //    return _transactionsAppService.DeleteAsync(id);
+        //}
 
         [HttpGet]
         [Route("as-excel-file")]
@@ -84,6 +84,34 @@ namespace BankSimulator.Controllers.Transactions
         public Task<DownloadTokenResultDto> GetDownloadTokenAsync()
         {
             return _transactionsAppService.GetDownloadTokenAsync();
+        }
+
+        [HttpPost]
+        [Route("create-withdraw")]
+        public Task<TransactionDto> CreateWithdrawAsync(WithdrawalCreateDto input)
+        {
+            return _transactionsAppService.CreateWithdrawAsync(input);
+        }
+
+        [HttpPost]
+        [Route("create-deposit")]
+        public Task<TransactionDto> CreateDepositAsync(DepositCreateDto input)
+        {
+            return _transactionsAppService.CreateDepositAsync(input);
+        }
+
+        [HttpPost]
+        [Route("create-transfer")]
+        public Task<TransactionDto> CreateTransferAsync(TransferCreateDto input)
+        {
+            return _transactionsAppService.CreateTransferAsync(input);
+        }
+
+        [HttpPut]
+        [Route("{id}")]
+        public Task<TransactionDto> ReverseAsync(Guid id)
+        {
+            return _transactionsAppService.ReverseAsync(id);
         }
     }
 }
