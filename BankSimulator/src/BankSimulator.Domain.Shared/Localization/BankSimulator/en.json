@@ -77,6 +77,15 @@
     "Enum:TransactionStatus.0": "Pending",
     "Enum:TransactionStatus.1": "Done",
     "Enum:TransactionStatus.2": "Reversed",
-    "TransactionStatus": "Transaction Status"
+    "TransactionStatus": "Transaction Status",
+    "Permission:Otps": "Otps",
+    "TransactionNumber": "Transaction Number",
+    "Code": "Code",
+    "ExpiryDate": "Expiry Date",
+    "MinExpiryDate": "Min Expiry Date",
+    "MaxExpiryDate": "Max Expiry Date",
+    "Otps": "Otps",
+    "NewOtp": "New Otp",
+    "Menu:Otps": "Otps"
   }
 }

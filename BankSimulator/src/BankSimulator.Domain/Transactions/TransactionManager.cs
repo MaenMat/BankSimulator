@@ -29,6 +29,7 @@ namespace BankSimulator.Transactions
 
             var transaction = new Transaction(
              GuidGenerator.Create(),
+             GenerateUniqueTransationNumber(),
              sourceAccountId, destinationAccountId, transactionType, amount, description, transactionDate, transactionStatus
              );
 
@@ -37,6 +38,7 @@ namespace BankSimulator.Transactions
 
         public async Task<Transaction> UpdateAsync(
             Guid id,
+            string transactionNumber,
             Guid? sourceAccountId, Guid? destinationAccountId, TransactionType transactionType, double amount, string description, DateTime transactionDate, TransactionStatus transactionStatus, [CanBeNull] string concurrencyStamp = null
         )
         {
@@ -46,6 +48,7 @@ namespace BankSimulator.Transactions
 
             var transaction = await _transactionRepository.GetAsync(id);
 
+            transaction.TransactionNumber = transactionNumber;
             transaction.SourceAccountId = sourceAccountId;
             transaction.DestinationAccountId = destinationAccountId;
             transaction.TransactionType = transactionType;
@@ -56,6 +59,14 @@ namespace BankSimulator.Transactions
 
             transaction.SetConcurrencyStampIfNotNull(concurrencyStamp);
             return await _transactionRepository.UpdateAsync(transaction);
+        }
+
+        public static string GenerateUniqueTransationNumber()
+        {
+            Random random = new Random();
+            // Generates an 8 digit number and pads the beginning with zeroes if necessary
+            int uniqueNumber = random.Next(10000000, 99999999);
+            return uniqueNumber.ToString();
         }
 
     }

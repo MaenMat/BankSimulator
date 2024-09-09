@@ -1,3 +1,4 @@
+using BankSimulator.Otps;
 using BankSimulator.Transactions;
 using BankSimulator.Accounts;
 using System;
@@ -30,5 +31,8 @@ public class BankSimulatorApplicationAutoMapperProfile : Profile
         CreateMap<TransactionWithNavigationProperties, TransactionWithNavigationPropertiesDto>();
         CreateMap<Account, LookupDto<Guid>>().ForMember(dest => dest.DisplayName, opt => opt.MapFrom(src => src.AccountNumber));
         CreateMap<Account, LookupDto<Guid>>().ForMember(dest => dest.DisplayName, opt => opt.MapFrom(src => src.AccountNumber));
+
+        CreateMap<Otp, OtpDto>();
+        CreateMap<Otp, OtpExcelDto>();
     }
 }

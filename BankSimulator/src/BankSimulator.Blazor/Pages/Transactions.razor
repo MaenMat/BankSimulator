@@ -68,23 +68,12 @@
                   Responsive="true"
                   PageSize="PageSize">
             <DataGridColumns>
-                
-                <DataGridEntityActionsColumn TItem="TransactionWithNavigationPropertiesDto" @ref="@EntityActionsColumn">
-                    <DisplayTemplate>
-                        <EntityActions TItem="TransactionWithNavigationPropertiesDto" EntityActionsColumn="@EntityActionsColumn">
-                            <EntityAction TItem="TransactionWithNavigationPropertiesDto"
-                                          Visible="@CanEditTransaction"
-                                          Clicked="async () => await ReverseTransation(context.Transaction.Id)"
-                                          Text="@L["Reverse"]"></EntityAction>
-                           @*  <EntityAction TItem="TransactionWithNavigationPropertiesDto"
-                                          Visible="@CanDeleteTransaction"
-                                          Clicked="() => DeleteTransactionAsync(context)"
-                                          ConfirmationMessage="@(()=> L["DeleteConfirmationMessage"])"
-                                          Text="@L["Delete"]"></EntityAction> *@
-                        </EntityActions> 
-                    </DisplayTemplate>
-                </DataGridEntityActionsColumn>
-               
+
+                <DataGridColumn TItem="TransactionWithNavigationPropertiesDto"
+                                Field="Transaction.TransactionNumber"
+                                Caption="@L["TransactionNumber"]">
+                </DataGridColumn>
+
               <DataGridColumn TItem="TransactionWithNavigationPropertiesDto"
                       Field="Transaction.TransactionType"
                       Caption="@L["TransactionType"]">
@@ -129,6 +118,23 @@
                         @L[$"Enum:TransactionStatus.{context.Transaction.TransactionStatus.ToString("d")}"]
                   </DisplayTemplate>
               </DataGridColumn>
+
+                <DataGridEntityActionsColumn TItem="TransactionWithNavigationPropertiesDto" @ref="@EntityActionsColumn">
+                    <DisplayTemplate>
+                        <EntityActions TItem="TransactionWithNavigationPropertiesDto" EntityActionsColumn="@EntityActionsColumn">
+                            <EntityAction TItem="TransactionWithNavigationPropertiesDto"
+                                          Visible="@(context.Transaction.TransactionStatus != TransactionStatus.Reversed && CanEditTransaction)"
+                                          Clicked="async () => await ReverseTransation(context.Transaction.Id)"
+                                          Text="@L["Reverse"]"></EntityAction>
+
+                            @* <EntityAction TItem="TransactionWithNavigationPropertiesDto"
+                            Visible="@(context.Transaction.Status != TransactionStatus.Reversed && CanDeleteTransaction)"
+                            Clicked="() => DeleteTransactionAsync(context)"
+                            ConfirmationMessage="@(() => L["DeleteConfirmationMessage"])"
+                            Text="@L["Delete"]"></EntityAction> *@
+                        </EntityActions>
+                    </DisplayTemplate>
+                </DataGridEntityActionsColumn>
 
             </DataGridColumns>
         </DataGrid>

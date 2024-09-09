@@ -31,6 +31,11 @@ public class BankSimulatorPermissionDefinitionProvider : PermissionDefinitionPro
         transactionPermission.AddChild(BankSimulatorPermissions.Transactions.Create, L("Permission:Create"));
         transactionPermission.AddChild(BankSimulatorPermissions.Transactions.Edit, L("Permission:Edit"));
         transactionPermission.AddChild(BankSimulatorPermissions.Transactions.Delete, L("Permission:Delete"));
+
+        var otpPermission = myGroup.AddPermission(BankSimulatorPermissions.Otps.Default, L("Permission:Otps"));
+        otpPermission.AddChild(BankSimulatorPermissions.Otps.Create, L("Permission:Create"));
+        otpPermission.AddChild(BankSimulatorPermissions.Otps.Edit, L("Permission:Edit"));
+        otpPermission.AddChild(BankSimulatorPermissions.Otps.Delete, L("Permission:Delete"));
     }
 
     private static LocalizableString L(string name)

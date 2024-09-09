@@ -1,3 +1,4 @@
+using BankSimulator.Otps;
 using BankSimulator.Transactions;
 using BankSimulator.Accounts;
 using BankSimulator.CustomerInfoFiles;
@@ -57,6 +58,8 @@ public class BankSimulatorEntityFrameworkCoreModule : AbpModule
             options.AddRepository<Account, Accounts.EfCoreAccountRepository>();
 
             options.AddRepository<Transaction, Transactions.EfCoreTransactionRepository>();
+
+            options.AddRepository<Otp, Otps.EfCoreOtpRepository>();
 
         });
 

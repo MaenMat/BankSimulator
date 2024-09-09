@@ -1,3 +1,4 @@
+using BankSimulator.Otps;
 using BankSimulator.Transactions;
 using BankSimulator.Accounts;
 using BankSimulator.CustomerInfoFiles;
@@ -32,6 +33,7 @@ public class BankSimulatorDbContext :
     IIdentityProDbContext,
     ISaasDbContext
 {
+    public DbSet<Otp> Otps { get; set; }
     public DbSet<Transaction> Transactions { get; set; }
     public DbSet<Account> Accounts { get; set; }
     public DbSet<CustomerInfoFile> CustomerInfoFiles { get; set; }
@@ -163,6 +165,26 @@ public class BankSimulatorDbContext :
     b.Property(x => x.TransactionStatus).HasColumnName(nameof(Transaction.TransactionStatus));
     b.HasOne<Account>().WithMany().HasForeignKey(x => x.SourceAccountId).OnDelete(DeleteBehavior.NoAction);
     b.HasOne<Account>().WithMany().HasForeignKey(x => x.DestinationAccountId).OnDelete(DeleteBehavior.NoAction);
+});
+
+        }
+        if (builder.IsHostDatabase())
+        {
+
+        }
+        if (builder.IsHostDatabase())
+        {
+
+        }
+        if (builder.IsHostDatabase())
+        {
+            builder.Entity<Otp>(b =>
+{
+    b.ToTable(BankSimulatorConsts.DbTablePrefix + "Otps", BankSimulatorConsts.DbSchema);
+    b.ConfigureByConvention();
+    b.Property(x => x.TransactionNumber).HasColumnName(nameof(Otp.TransactionNumber));
+    b.Property(x => x.Code).HasColumnName(nameof(Otp.Code));
+    b.Property(x => x.ExpiryDate).HasColumnName(nameof(Otp.ExpiryDate));
 });
 
         }

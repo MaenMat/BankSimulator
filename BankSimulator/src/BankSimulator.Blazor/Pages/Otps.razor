@@ -1,0 +1,219 @@
+
+
+@page "/otps"
+
+@attribute [Authorize(BankSimulatorPermissions.Otps.Default)]
+@using BankSimulator.Otps
+@using BankSimulator.Localization
+@using BankSimulator.Shared
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.Extensions.Localization
+@using Microsoft.AspNetCore.Components.Web
+@using Blazorise
+@using Blazorise.Components
+@using Blazorise.DataGrid
+@using Volo.Abp.BlazoriseUI
+@using Volo.Abp.BlazoriseUI.Components
+@using Volo.Abp.ObjectMapping
+@using Volo.Abp.AspNetCore.Components.Messages
+@using Volo.Abp.AspNetCore.Components.Web.Theming.Layout
+@using BankSimulator.Permissions
+@using Microsoft.AspNetCore.Components
+@using Volo.Abp.AspNetCore.Components.Web
+@using Volo.Abp.Http.Client
+@inherits BankSimulatorComponentBase
+@inject IOtpsAppService OtpsAppService
+@inject IUiMessageService UiMessageService
+@inject IRemoteServiceConfigurationProvider RemoteServiceConfigurationProvider
+@inject NavigationManager NavigationManager
+
+@* ************************* PAGE HEADER ************************* *@
+<PageHeader Title="@L["Otps"]" BreadcrumbItems="BreadcrumbItems" Toolbar="Toolbar">
+
+</PageHeader>
+
+@* ************************* SEARCH ************************* *@
+<Card>
+    <CardBody>
+        <Form id="OtpSearchForm" class="mb-3">
+            <Addons>
+                <Addon AddonType="AddonType.Body">
+                    <TextEdit @bind-Text="@Filter.FilterText"
+                              Autofocus="true"
+                              Placeholder="@L["Search"]">
+                    </TextEdit>
+                </Addon>
+                <Addon AddonType="AddonType.End">
+                    <SubmitButton Form="OtpSearchForm" Clicked="GetOtpsAsync">
+                        <Icon Name="IconName.Search" Class="me-1"></Icon>@L["Search"]
+                    </SubmitButton>
+                </Addon>
+            </Addons>
+        </Form>
+    </CardBody>
+</Card>
+
+@* ************************* DATA GRID ************************* *@
+<Card>
+    <CardBody>
+        <DataGrid TItem="OtpDto"
+                  Data="OtpList"
+                  ReadData="OnDataGridReadAsync"
+                  TotalItems="TotalCount"
+                  ShowPager="true"
+                  Responsive="true"
+                  PageSize="PageSize">
+            <DataGridColumns>
+                <DataGridEntityActionsColumn TItem="OtpDto" @ref="@EntityActionsColumn">
+                    <DisplayTemplate>
+                        <EntityActions TItem="OtpDto" EntityActionsColumn="@EntityActionsColumn">
+                            <EntityAction TItem="OtpDto"
+                                          Visible="@CanEditOtp"
+                                          Clicked="async () => await OpenEditOtpModalAsync(context)"
+                                          Text="@L["Edit"]"></EntityAction>
+                            <EntityAction TItem="OtpDto"
+                                          Visible="@CanDeleteOtp"
+                                          Clicked="() => DeleteOtpAsync(context)"
+                                          ConfirmationMessage="@(()=> L["DeleteConfirmationMessage"])"
+                                          Text="@L["Delete"]"></EntityAction>
+                        </EntityActions>
+                    </DisplayTemplate>
+                </DataGridEntityActionsColumn>
+               
+              <DataGridColumn TItem="OtpDto"
+                      Field="Code"
+                      Caption="@L["Code"]">
+              </DataGridColumn>
+
+              <DataGridColumn TItem="OtpDto"
+                      Field="ExpiryDate"
+                      Caption="@L["ExpiryDate"]">
+                  <DisplayTemplate>
+                        @(context.ExpiryDate.HasValue ? context.ExpiryDate.Value.ToShortDateString() : string.Empty)
+                  </DisplayTemplate>
+              </DataGridColumn>
+
+            </DataGridColumns>
+        </DataGrid>
+    </CardBody>
+</Card>
+
+@* ************************* CREATE MODAL ************************* *@
+<Modal @ref="CreateOtpModal" Closing="@CreateOtpModal.CancelClosingModalWhenFocusLost">
+    <ModalContent Centered="true">
+        <Form id="CreateOtpForm">
+            <ModalHeader>
+                <ModalTitle>@L["NewOtp"]</ModalTitle>
+                <CloseButton Clicked="CloseCreateOtpModalAsync" />
+            </ModalHeader>
+            <ModalBody>
+                <Validations @ref="@NewOtpValidations"
+                            Mode="ValidationMode.Auto"
+                            Model="@NewOtp"
+                            ValidateOnLoad="false">
+                     
+                    
+                    <Validation>
+                        <Field>
+                            <FieldLabel>@L["TransactionNumber"]</FieldLabel>
+                            <TextEdit @bind-Text="@NewOtp.TransactionNumber"  >
+                                <Feedback>
+                                    <ValidationError />
+                                </Feedback>
+                            </TextEdit>
+                        </Field>
+                    </Validation>
+
+
+                    <Validation>
+                        <Field>
+                            <FieldLabel>@L["Code"]</FieldLabel>
+                            <TextEdit @bind-Text="@NewOtp.Code"  >
+                                <Feedback>
+                                    <ValidationError />
+                                </Feedback>
+                            </TextEdit>
+                        </Field>
+                    </Validation>
+
+
+                    <Validation>
+                        <Field>
+                            <FieldLabel>@L["ExpiryDate"]</FieldLabel>
+                            <DateEdit TValue="DateTime?" InputMode="DateInputMode.DateTime" @bind-Date="@NewOtp.ExpiryDate" >
+                               <Feedback>
+                                    <ValidationError />
+                                </Feedback>
+                            </DateEdit>
+                        </Field>
+                    </Validation>
+
+
+                    
+                    
+                </Validations>
+            </ModalBody>
+            <ModalFooter>
+                <Button Color="Color.Secondary"
+                        Clicked="CloseCreateOtpModalAsync">
+                    @L["Cancel"]
+                </Button>
+                <SubmitButton Form="CreateOtpForm" Clicked="CreateOtpAsync" />
+            </ModalFooter>
+        </Form>
+    </ModalContent>
+</Modal>
+
+@* ************************* EDIT MODAL ************************* *@
+<Modal @ref="EditOtpModal" Closing="@EditOtpModal.CancelClosingModalWhenFocusLost">
+    <ModalContent Centered="true">
+        <Form id="EditOtpForm">
+            <ModalHeader>
+                <ModalTitle>@L["Update"]</ModalTitle>
+                <CloseButton Clicked="CloseEditOtpModalAsync" />
+            </ModalHeader>
+            <ModalBody>
+                <Validations @ref="@EditingOtpValidations"
+                            Mode="ValidationMode.Auto"
+                            Model="@EditingOtp"
+                            ValidateOnLoad="false">
+                     
+                    
+                    <Validation>
+                        <Field>
+                            <FieldLabel>@L["Code"]</FieldLabel>
+                            <TextEdit @bind-Text="@EditingOtp.Code"  >
+                                <Feedback>
+                                    <ValidationError />
+                                </Feedback>
+                            </TextEdit>
+                        </Field>
+                    </Validation>
+
+
+                    <Validation>
+                        <Field>
+                            <FieldLabel>@L["ExpiryDate"]</FieldLabel>
+                            <DateEdit TValue="DateTime?" InputMode="DateInputMode.DateTime" @bind-Date="@EditingOtp.ExpiryDate" >
+                               <Feedback>
+                                    <ValidationError />
+                                </Feedback>
+                            </DateEdit>
+                        </Field>
+                    </Validation>
+
+
+                    
+                    
+                </Validations>
+            </ModalBody>
+            <ModalFooter>
+                <Button Color="Color.Secondary"
+                        Clicked="CloseEditOtpModalAsync">
+                    @L["Cancel"]
+                </Button>
+                <SubmitButton Form="CreateOtpForm" Clicked="UpdateOtpAsync" />
+            </ModalFooter>
+        </Form>
+    </ModalContent>
+</Modal>

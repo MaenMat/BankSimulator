@@ -298,6 +298,7 @@ namespace BankSimulator.Blazor.Pages
             if (confirm) 
             {
                 await TransactionsAppService.ReverseAsync(id);
+                await GetTransactionsAsync();
             }
             
         }

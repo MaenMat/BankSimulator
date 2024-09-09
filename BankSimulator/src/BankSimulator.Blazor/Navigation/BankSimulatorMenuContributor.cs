@@ -146,6 +146,15 @@ public class BankSimulatorMenuContributor : IMenuContributor
                 icon: "fa fa-file-alt",
                 requiredPermissionName: BankSimulatorPermissions.Transactions.Default)
         );
+
+        context.Menu.AddItem(
+            new ApplicationMenuItem(
+                BankSimulatorMenus.Otps,
+                l["Menu:Otps"],
+                url: "/otps",
+                icon: "fa fa-file-alt",
+                requiredPermissionName: BankSimulatorPermissions.Otps.Default)
+        );
         return Task.CompletedTask;
     }
 

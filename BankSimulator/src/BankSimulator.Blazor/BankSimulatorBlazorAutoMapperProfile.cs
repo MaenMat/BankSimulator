@@ -1,3 +1,4 @@
+using BankSimulator.Otps;
 using BankSimulator.Transactions;
 using BankSimulator.Accounts;
 using Volo.Abp.AutoMapper;
@@ -19,5 +20,7 @@ public class BankSimulatorBlazorAutoMapperProfile : Profile
         CreateMap<AccountDto, AccountUpdateDto>().Ignore(x => x.CustomerInfoFileIds);
 
         CreateMap<TransactionDto, TransactionUpdateDto>();
+
+        CreateMap<OtpDto, OtpUpdateDto>();
     }
 }

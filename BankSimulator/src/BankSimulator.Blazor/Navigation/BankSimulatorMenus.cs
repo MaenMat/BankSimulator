@@ -14,4 +14,6 @@ public class BankSimulatorMenus
 
     public const string Transactions = Prefix + ".Transactions";
 
+    public const string Otps = Prefix + ".Otps";
+
 }

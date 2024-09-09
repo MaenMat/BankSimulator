@@ -15,6 +15,7 @@ namespace BankSimulator.Transactions
 {
     public class Transaction : FullAuditedAggregateRoot<Guid>
     {
+        public virtual string TransactionNumber { get; set; }
         public virtual TransactionType TransactionType { get; set; }
 
         public virtual double Amount { get; set; }
@@ -33,10 +34,11 @@ namespace BankSimulator.Transactions
 
         }
 
-        public Transaction(Guid id, Guid? sourceAccountId, Guid? destinationAccountId, TransactionType transactionType, double amount, string description, DateTime transactionDate, TransactionStatus transactionStatus)
+        public Transaction(Guid id,string transactionNumber, Guid? sourceAccountId, Guid? destinationAccountId, TransactionType transactionType, double amount, string description, DateTime transactionDate, TransactionStatus transactionStatus)
         {
 
             Id = id;
+            TransactionNumber = transactionNumber;
             TransactionType = transactionType;
             Amount = amount;
             Description = description;
