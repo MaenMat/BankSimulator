@@ -5,6 +5,7 @@ using Volo.Abp.Application.Dtos;
 using Volo.Abp.Application.Services;
 using Volo.Abp.Content;
 using BankSimulator.Shared;
+using BankSimulator.Otps;
 
 namespace BankSimulator.Transactions
 {
@@ -21,5 +22,8 @@ namespace BankSimulator.Transactions
         Task<TransactionDto> CreateDepositAsync(DepositCreateDto input);
         Task<TransactionDto> CreateTransferAsync(TransferCreateDto input);
         Task<TransactionDto> ReverseAsync(Guid id);
+        Task<string> CreateWithdrawRequestAsync(WithdrawalCreateDto input);
+        Task<string> ConfirmWithdrawRequestAsync(ConfirmOptDto input);
+
     }
 }

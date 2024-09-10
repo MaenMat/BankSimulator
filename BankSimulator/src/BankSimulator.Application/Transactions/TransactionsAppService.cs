@@ -20,6 +20,7 @@ using Volo.Abp.Caching;
 using Microsoft.Extensions.Caching.Distributed;
 using BankSimulator.Shared;
 using Volo.Abp.Uow;
+using BankSimulator.Otps;
 
 namespace BankSimulator.Transactions
 {
@@ -30,7 +31,9 @@ namespace BankSimulator.Transactions
         private readonly IDistributedCache<TransactionExcelDownloadTokenCacheItem, string> _excelDownloadTokenCache;
         private readonly ITransactionRepository _transactionRepository;
         private readonly TransactionManager _transactionManager;
+        private readonly OtpManager _optManager;
         private readonly IRepository<Account, Guid> _accountRepository;
+        private readonly IOtpRepository _otpRepository;
 
         public TransactionsAppService(ITransactionRepository transactionRepository, TransactionManager transactionManager, IDistributedCache<TransactionExcelDownloadTokenCacheItem, string> excelDownloadTokenCache, IRepository<Account, Guid> accountRepository)
         {
@@ -203,20 +206,17 @@ namespace BankSimulator.Transactions
         [Authorize(BankSimulatorPermissions.Transactions.Edit)]
         public virtual async Task<TransactionDto> ReverseAsync(Guid id)
         {
-            // Fetch the transaction by id
             var transaction = await _transactionRepository.GetAsync(id);
             if (transaction == null)
             {
                 throw new UserFriendlyException(L["TransactionNotFound"]);
             }
 
-            // Ensure the transaction hasn't been reversed already
             if (transaction.TransactionStatus == TransactionStatus.Reversed)
             {
                 throw new UserFriendlyException(L["TransactionAlreadyReversed"]);
             }
 
-            // Handle reversal based on transaction type
             switch (transaction.TransactionType)
             {
                 case TransactionType.Withdrawal:
@@ -232,15 +232,12 @@ namespace BankSimulator.Transactions
                     throw new UserFriendlyException(L["InvalidTransactionType"]);
             }
 
-            // Update transaction status to "Reversed"
             transaction.TransactionStatus = TransactionStatus.Reversed;
             await _transactionRepository.UpdateAsync(transaction);
 
-            // Map to DTO and return the updated transaction
             return ObjectMapper.Map<Transaction, TransactionDto>(transaction);
         }
 
-        // Helper method to reverse a withdrawal
         private async Task ReverseWithdrawalAsync(Transaction transaction)
         {
             var sourceAccount = await _accountRepository.GetAsync(transaction.SourceAccountId.Value);
@@ -249,14 +246,10 @@ namespace BankSimulator.Transactions
                 throw new UserFriendlyException(L["SourceAccountNotFound"]);
             }
 
-            // Add the withdrawal amount back to the source account
             sourceAccount.Balance += transaction.Amount;
-
-            // Save updated account balance
             await _accountRepository.UpdateAsync(sourceAccount);
         }
 
-        // Helper method to reverse a deposit
         private async Task ReverseDepositAsync(Transaction transaction)
         {
             var destinationAccount = await _accountRepository.GetAsync(transaction.DestinationAccountId.Value);
@@ -265,14 +258,10 @@ namespace BankSimulator.Transactions
                 throw new UserFriendlyException(L["DestinationAccountNotFound"]);
             }
 
-            // Subtract the deposit amount from the destination account
             destinationAccount.Balance -= transaction.Amount;
-
-            // Save updated account balance
             await _accountRepository.UpdateAsync(destinationAccount);
         }
 
-        // Helper method to reverse a transfer
         private async Task ReverseTransferAsync(Transaction transaction)
         {
             var sourceAccount = await _accountRepository.GetAsync(transaction.SourceAccountId.Value);
@@ -288,13 +277,9 @@ namespace BankSimulator.Transactions
                 throw new UserFriendlyException(L["DestinationAccountNotFound"]);
             }
 
-            // Add the transfer amount back to the source account
             sourceAccount.Balance += transaction.Amount;
-
-            // Subtract the transfer amount from the destination account
             destinationAccount.Balance -= transaction.Amount;
 
-            // Save updated account balances
             await _accountRepository.UpdateAsync(sourceAccount);
             await _accountRepository.UpdateAsync(destinationAccount);
         }
@@ -311,6 +296,73 @@ namespace BankSimulator.Transactions
 
         //    return ObjectMapper.Map<Transaction, TransactionDto>(transaction);
         //}
+        [Authorize(BankSimulatorPermissions.Transactions.Create)]
+        [UnitOfWork]
+        public virtual async Task<string> CreateWithdrawRequestAsync(WithdrawalCreateDto input)
+        {
+            if (input.Amount <= 0)
+            {
+                throw new UserFriendlyException(L["InvalidWithdrawAmount"]);
+            }
+
+            if (input.SourceAccountId == null)
+            {
+                throw new UserFriendlyException(L["SourceAccountIdIsRequired"]);
+            }
+
+            var account = await _accountRepository.GetAsync(input.SourceAccountId.Value);
+            if (account == null)
+            {
+                throw new UserFriendlyException(L["AccountNotFound"]);
+            }
+
+            var transaction = await _transactionManager.CreateAsync(
+            input.SourceAccountId, null, TransactionType.Withdrawal, input.Amount, input.Description, input.TransactionDate, TransactionStatus.Pending
+            );
+
+            var otp = await _optManager.CreateAsync(transaction.TransactionNumber, DateTime.Now.AddMinutes(5));
+
+            return transaction.TransactionNumber;
+        }
+
+        [Authorize(BankSimulatorPermissions.Transactions.Create)]
+        [UnitOfWork]
+        public virtual async Task<string> ConfirmWithdrawRequestAsync(ConfirmOptDto input)
+        {
+            var otpQuery = await _otpRepository.GetQueryableAsync();
+            var otp = otpQuery.Where(otp => otp.TransactionNumber == input.TransactionNumber)
+                    .OrderByDescending(otp => otp.CreationTime)
+                    .FirstOrDefault();
+
+            var transaction = await _transactionRepository.FirstOrDefaultAsync(t => t.TransactionNumber == input.TransactionNumber);
+
+            var account = await _accountRepository.GetAsync(transaction.SourceAccountId.Value);
+
+            if (DateTime.Now > otp.ExpiryDate)
+            {
+                throw new UserFriendlyException(L["YouEnteredExpiredOTP"]);
+            }
+
+            if (input.Code != otp.Code)
+            {
+                throw new UserFriendlyException(L["InvalidOTP"]);
+            }
+
+            if (!await ValidateWithdrawAmount(transaction.SourceAccountId, transaction.Amount))
+            {
+                throw new UserFriendlyException(L["InsuffecientAccountBalance"]);
+            }
+
+            account.Balance -= transaction.Amount;
+
+            await _accountRepository.UpdateAsync(account);
+
+            transaction.TransactionStatus = TransactionStatus.Done;
+
+            await _transactionRepository.UpdateAsync(transaction);
+
+            return transaction.TransactionNumber;
+        }
 
         [AllowAnonymous]
         public virtual async Task<IRemoteStreamContent> GetListAsExcelFileAsync(TransactionExcelDownloadDto input)
@@ -329,7 +381,6 @@ namespace BankSimulator.Transactions
                 Description = item.Transaction.Description,
                 TransactionDate = item.Transaction.TransactionDate,
                 TransactionStatus = item.Transaction.TransactionStatus,
-
                 SourceAccount = item.Account?.AccountNumber,
                 DestinationAccount = item.Account1?.AccountNumber,
 

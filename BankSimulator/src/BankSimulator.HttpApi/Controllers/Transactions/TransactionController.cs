@@ -8,6 +8,7 @@ using Volo.Abp.Application.Dtos;
 using BankSimulator.Transactions;
 using Volo.Abp.Content;
 using BankSimulator.Shared;
+using BankSimulator.Otps;
 
 namespace BankSimulator.Controllers.Transactions
 {
@@ -112,6 +113,21 @@ namespace BankSimulator.Controllers.Transactions
         public Task<TransactionDto> ReverseAsync(Guid id)
         {
             return _transactionsAppService.ReverseAsync(id);
+        }
+
+        [HttpPost]
+        [Route("create-transfer-request")]
+        public Task<string> CreateWithdrawRequestAsync(WithdrawalCreateDto input)
+        {
+            return _transactionsAppService.CreateWithdrawRequestAsync(input);
+        }
+
+        [HttpPost]
+        [Route("confirm-transfer-request")]
+        public Task<string> ConfirmWithdrawRequestAsync(ConfirmOptDto input)
+        {
+            return _transactionsAppService.ConfirmWithdrawRequestAsync(input);
+
         }
     }
 }

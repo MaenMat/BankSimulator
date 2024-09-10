@@ -26,10 +26,10 @@ namespace BankSimulator.Transactions
             Check.NotNull(transactionType, nameof(transactionType));
             Check.NotNull(transactionDate, nameof(transactionDate));
             Check.NotNull(transactionStatus, nameof(transactionStatus));
-
+            var TransNumber = await GenerateUniqueTransactionNumberAsync();
             var transaction = new Transaction(
              GuidGenerator.Create(),
-             GenerateUniqueTransationNumber(),
+             TransNumber,
              sourceAccountId, destinationAccountId, transactionType, amount, description, transactionDate, transactionStatus
              );
 
@@ -61,12 +61,24 @@ namespace BankSimulator.Transactions
             return await _transactionRepository.UpdateAsync(transaction);
         }
 
-        public static string GenerateUniqueTransationNumber()
+        public async Task<string> GenerateUniqueTransactionNumberAsync()
         {
             Random random = new Random();
-            // Generates an 8 digit number and pads the beginning with zeroes if necessary
-            int uniqueNumber = random.Next(10000000, 99999999);
-            return uniqueNumber.ToString();
+            string transactionNumber;
+
+            bool isUnique;
+            do
+            {
+                // Generates an 8-digit number
+                int uniqueNumber = random.Next(10000000, 99999999);
+                transactionNumber = uniqueNumber.ToString();
+
+                // Check if this number already exists in the database
+                isUnique = await _transactionRepository.FirstOrDefaultAsync(x => x.TransactionNumber == transactionNumber) == null;
+
+            } while (!isUnique); // Keep generating until a unique number is found
+
+            return transactionNumber;
         }
 
     }

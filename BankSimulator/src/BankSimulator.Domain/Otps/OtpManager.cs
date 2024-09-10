@@ -20,12 +20,12 @@ namespace BankSimulator.Otps
         }
 
         public async Task<Otp> CreateAsync(
-        string transactionNumber, string code, DateTime? expiryDate = null)
+        string transactionNumber, DateTime? expiryDate = null)
         {
-
+            var code = GenerateRandomCharAndNumberString();
             var otp = new Otp(
              GuidGenerator.Create(),
-             transactionNumber, code, expiryDate
+             transactionNumber, code , expiryDate
              );
 
             return await _otpRepository.InsertAsync(otp);
@@ -45,6 +45,23 @@ namespace BankSimulator.Otps
             otp.SetConcurrencyStampIfNotNull(concurrencyStamp);
             return await _otpRepository.UpdateAsync(otp);
         }
+
+        public static string GenerateRandomCharAndNumberString()
+        {
+            var random = new Random();
+
+            // Generate 4 random letters
+            const string chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+            string randomChars = new string(Enumerable.Repeat(chars, 4)
+                                            .Select(s => s[random.Next(s.Length)]).ToArray());
+
+            // Generate 4 random digits
+            string randomNumbers = random.Next(1000, 9999).ToString();
+
+            // Combine them
+            return randomChars + randomNumbers;
+        }
+
 
     }
 }

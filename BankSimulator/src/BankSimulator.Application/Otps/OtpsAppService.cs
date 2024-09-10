@@ -17,6 +17,7 @@ using Volo.Abp.Authorization;
 using Volo.Abp.Caching;
 using Microsoft.Extensions.Caching.Distributed;
 using BankSimulator.Shared;
+using BankSimulator.Transactions;
 
 namespace BankSimulator.Otps
 {
@@ -26,13 +27,15 @@ namespace BankSimulator.Otps
     {
         private readonly IDistributedCache<OtpExcelDownloadTokenCacheItem, string> _excelDownloadTokenCache;
         private readonly IOtpRepository _otpRepository;
+        private readonly ITransactionRepository _transactionRepository;
         private readonly OtpManager _otpManager;
 
-        public OtpsAppService(IOtpRepository otpRepository, OtpManager otpManager, IDistributedCache<OtpExcelDownloadTokenCacheItem, string> excelDownloadTokenCache)
+        public OtpsAppService(IOtpRepository otpRepository, OtpManager otpManager, IDistributedCache<OtpExcelDownloadTokenCacheItem, string> excelDownloadTokenCache, ITransactionRepository transactionRepository)
         {
             _excelDownloadTokenCache = excelDownloadTokenCache;
             _otpRepository = otpRepository;
             _otpManager = otpManager;
+            _transactionRepository = transactionRepository;
         }
 
         public virtual async Task<PagedResultDto<OtpDto>> GetListAsync(GetOtpsInput input)
@@ -61,9 +64,13 @@ namespace BankSimulator.Otps
         [Authorize(BankSimulatorPermissions.Otps.Create)]
         public virtual async Task<OtpDto> CreateAsync(OtpCreateDto input)
         {
+            if(input.TransactionNumber == null)
+            {
+                throw new UserFriendlyException(L["TransactionNumberIsRequired"]);
+            }
 
             var otp = await _otpManager.CreateAsync(
-            input.TransactionNumber, input.Code, input.ExpiryDate
+            input.TransactionNumber, input.ExpiryDate
             );
 
             return ObjectMapper.Map<Otp, OtpDto>(otp);
@@ -115,6 +122,25 @@ namespace BankSimulator.Otps
             {
                 Token = token
             };
+        }
+        public virtual async Task<OtpDto> ResendOtp(string TransactionNumber)
+        {
+            var transaction = await _transactionRepository.FirstOrDefaultAsync(t=>t.TransactionNumber == TransactionNumber);
+            if (transaction == null)
+            {
+                throw new UserFriendlyException(L["InvalidTransactionNumber"]);
+            }
+
+            if (transaction.TransactionStatus == TransactionStatus.Done)
+            {
+                throw new UserFriendlyException(L["TransactionStatusIsDone"]);
+            }
+
+            var otp = await _otpManager.CreateAsync(
+            TransactionNumber, DateTime.Now.AddMinutes(5)
+            );
+
+            return ObjectMapper.Map<Otp, OtpDto>(otp);
         }
     }
 }
