@@ -116,14 +116,14 @@ namespace BankSimulator.Controllers.Transactions
         }
 
         [HttpPost]
-        [Route("create-transfer-request")]
+        [Route("create-withdraw-request")]
         public Task<string> CreateWithdrawRequestAsync(WithdrawalCreateDto input)
         {
             return _transactionsAppService.CreateWithdrawRequestAsync(input);
         }
 
         [HttpPost]
-        [Route("confirm-transfer-request")]
+        [Route("confirm-withdraw-request")]
         public Task<string> ConfirmWithdrawRequestAsync(ConfirmOptDto input)
         {
             return _transactionsAppService.ConfirmWithdrawRequestAsync(input);

@@ -320,7 +320,7 @@ namespace BankSimulator.Transactions
             input.SourceAccountId, null, TransactionType.Withdrawal, input.Amount, input.Description, input.TransactionDate, TransactionStatus.Pending
             );
 
-            var otp = await _optManager.CreateAsync(transaction.TransactionNumber, DateTime.Now.AddMinutes(5));
+            await _optManager.CreateAsync(transaction.TransactionNumber, DateTime.Now.AddMinutes(OtpConsts.ExpirationInMinutes));
 
             return transaction.TransactionNumber;
         }

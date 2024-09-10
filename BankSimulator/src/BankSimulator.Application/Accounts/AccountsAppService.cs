@@ -176,7 +176,7 @@ namespace BankSimulator.Accounts
                         .Where(cif => cif.Id == acf.CustomerInfoFileId && cif.CIFNumber == cifNumber)
                         .Any()))
                 .Select(account => new 
-                {
+                {   AccountId = account.Id,
                     AccountNo = account.AccountNumber,
                     Balance = account.Balance,
                 }).ToList();

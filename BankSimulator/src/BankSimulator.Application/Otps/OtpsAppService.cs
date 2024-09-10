@@ -137,7 +137,7 @@ namespace BankSimulator.Otps
             }
 
             var otp = await _otpManager.CreateAsync(
-            TransactionNumber, DateTime.Now.AddMinutes(5)
+            TransactionNumber, DateTime.Now.AddMinutes(OtpConsts.ExpirationInMinutes)
             );
 
             return ObjectMapper.Map<Otp, OtpDto>(otp);
