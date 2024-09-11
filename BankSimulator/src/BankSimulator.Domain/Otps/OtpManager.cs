@@ -7,6 +7,7 @@ using Volo.Abp;
 using Volo.Abp.Domain.Repositories;
 using Volo.Abp.Domain.Services;
 using Volo.Abp.Data;
+using System.ComponentModel;
 
 namespace BankSimulator.Otps
 {
@@ -20,12 +21,12 @@ namespace BankSimulator.Otps
         }
 
         public async Task<Otp> CreateAsync(
-        string transactionNumber, DateTime? expiryDate = null)
+        string transactionNumber, DateTime? expiryDate)
         {
             var code = GenerateRandomCharAndNumberString();
             var otp = new Otp(
              GuidGenerator.Create(),
-             transactionNumber, code , expiryDate
+             transactionNumber, code, expiryDate
              );
 
             return await _otpRepository.InsertAsync(otp);

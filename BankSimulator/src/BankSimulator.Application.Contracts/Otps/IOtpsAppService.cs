@@ -22,5 +22,6 @@ namespace BankSimulator.Otps
         Task<IRemoteStreamContent> GetListAsExcelFileAsync(OtpExcelDownloadDto input);
 
         Task<DownloadTokenResultDto> GetDownloadTokenAsync();
+        Task<string> ResendOtp(string TransactionNumber);
     }
 }

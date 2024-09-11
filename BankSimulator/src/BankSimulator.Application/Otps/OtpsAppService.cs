@@ -123,7 +123,7 @@ namespace BankSimulator.Otps
                 Token = token
             };
         }
-        public virtual async Task<OtpDto> ResendOtp(string TransactionNumber)
+        public virtual async Task<string> ResendOtp(string TransactionNumber)
         {
             var transaction = await _transactionRepository.FirstOrDefaultAsync(t=>t.TransactionNumber == TransactionNumber);
             if (transaction == null)
@@ -140,7 +140,7 @@ namespace BankSimulator.Otps
             TransactionNumber, DateTime.Now.AddMinutes(OtpConsts.ExpirationInMinutes)
             );
 
-            return ObjectMapper.Map<Otp, OtpDto>(otp);
+            return TransactionNumber;
         }
     }
 }

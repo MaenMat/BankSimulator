@@ -70,5 +70,11 @@ namespace BankSimulator.Controllers.Otps
         {
             return _otpsAppService.GetDownloadTokenAsync();
         }
+        [HttpGet]
+        [Route("resend-otp")]
+        public Task<string> ResendOtp(string TransactionNumber)
+        {
+            return _otpsAppService.ResendOtp(TransactionNumber);
+        }
     }
 }

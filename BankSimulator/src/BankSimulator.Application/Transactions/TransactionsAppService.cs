@@ -35,11 +35,20 @@ namespace BankSimulator.Transactions
         private readonly IRepository<Account, Guid> _accountRepository;
         private readonly IOtpRepository _otpRepository;
 
-        public TransactionsAppService(ITransactionRepository transactionRepository, TransactionManager transactionManager, IDistributedCache<TransactionExcelDownloadTokenCacheItem, string> excelDownloadTokenCache, IRepository<Account, Guid> accountRepository)
+        public TransactionsAppService(ITransactionRepository transactionRepository,
+            TransactionManager transactionManager,
+            IDistributedCache<TransactionExcelDownloadTokenCacheItem,
+            string> excelDownloadTokenCache,
+            IRepository<Account,Guid> accountRepository,
+            OtpManager optManager,
+            IOtpRepository optRepository)
         {
             _excelDownloadTokenCache = excelDownloadTokenCache;
             _transactionRepository = transactionRepository;
-            _transactionManager = transactionManager; _accountRepository = accountRepository;
+            _transactionManager = transactionManager;
+            _accountRepository = accountRepository;
+            _optManager = optManager;
+            _otpRepository = optRepository;
         }
 
         public virtual async Task<PagedResultDto<TransactionWithNavigationPropertiesDto>> GetListAsync(GetTransactionsInput input)
@@ -215,6 +224,11 @@ namespace BankSimulator.Transactions
             if (transaction.TransactionStatus == TransactionStatus.Reversed)
             {
                 throw new UserFriendlyException(L["TransactionAlreadyReversed"]);
+            }
+
+            if (transaction.TransactionStatus == TransactionStatus.Pending)
+            {
+                throw new UserFriendlyException(L["TransactionIsInPendingStatus,OnlyDoneTransactionsCanBeReversed"]);
             }
 
             switch (transaction.TransactionType)
